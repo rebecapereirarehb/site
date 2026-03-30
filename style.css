@@ -1,0 +1,102 @@
+"""
+app/routes/user.py - Rotas do painel do usuário
+"""
+import os
+from flask import (Blueprint, render_template, redirect, url_for,
+                   flash, request, current_app)
+from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
+from app import db
+from app.models.activity import ActivityLog
+from app.forms.user_forms import EditProfileForm, ChangePasswordForm
+
+user = Blueprint('user', __name__)
+
+
+def save_avatar(file):
+    """Salva o avatar enviado pelo usuário"""
+    filename = secure_filename(file.filename)
+    ext = filename.rsplit('.', 1)[-1].lower()
+    new_filename = f"user_{current_user.id}.{ext}"
+    avatar_dir = os.path.join(current_app.root_path, 'static', 'img', 'avatars')
+    os.makedirs(avatar_dir, exist_ok=True)
+    file.save(os.path.join(avatar_dir, new_filename))
+    return new_filename
+
+
+@user.route('/dashboard')
+@login_required
+def dashboard():
+    """Dashboard do usuário comum"""
+    recent_logs = ActivityLog.query.filter_by(
+        user_id=current_user.id
+    ).order_by(ActivityLog.created_at.desc()).limit(5).all()
+
+    return render_template('user/dashboard.html',
+                           title='Meu Painel',
+                           recent_logs=recent_logs)
+
+
+@user.route('/profile')
+@login_required
+def profile():
+    """Página de perfil do usuário"""
+    logs = ActivityLog.query.filter_by(
+        user_id=current_user.id
+    ).order_by(ActivityLog.created_at.desc()).limit(10).all()
+    return render_template('user/profile.html', title='Meu Perfil', logs=logs)
+
+
+@user.route('/profile/edit', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    """Edição de perfil"""
+    form = EditProfileForm()
+
+    if form.validate_on_submit():
+        current_user.full_name = form.full_name.data.strip()
+        current_user.username = form.username.data.lower().strip()
+        current_user.email = form.email.data.lower().strip()
+        current_user.phone = form.phone.data.strip() if form.phone.data else None
+        current_user.bio = form.bio.data.strip() if form.bio.data else None
+
+        if form.avatar.data:
+            try:
+                filename = save_avatar(form.avatar.data)
+                current_user.avatar = filename
+            except Exception as e:
+                flash(f'Erro ao salvar imagem: {str(e)}', 'warning')
+
+        db.session.commit()
+        ActivityLog.log('profile_updated', 'Perfil atualizado.', user_id=current_user.id)
+        flash('Perfil atualizado com sucesso!', 'success')
+        return redirect(url_for('user.profile'))
+
+    elif request.method == 'GET':
+        form.full_name.data = current_user.full_name
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+        form.phone.data = current_user.phone
+        form.bio.data = current_user.bio
+
+    return render_template('user/edit_profile.html', form=form, title='Editar Perfil')
+
+
+@user.route('/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """Alteração de senha"""
+    form = ChangePasswordForm()
+
+    if form.validate_on_submit():
+        if not current_user.verify_password(form.current_password.data):
+            flash('Senha atual incorreta.', 'danger')
+        else:
+            current_user.password = form.new_password.data
+            db.session.commit()
+            ActivityLog.log('password_changed', 'Senha alterada com sucesso.',
+                            user_id=current_user.id, status='success')
+            flash('Senha alterada com sucesso!', 'success')
+            return redirect(url_for('user.profile'))
+
+    return render_template('user/change_password.html', form=form, title='Alterar Senha')

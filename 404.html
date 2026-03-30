@@ -1,0 +1,66 @@
+"""
+config.py - Configurações da aplicação Flask
+"""
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+
+
+class Config:
+    """Configuração base"""
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'chave-dev-insegura-mude-em-producao'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    WTF_CSRF_ENABLED = True
+    MAX_CONTENT_LENGTH = 2 * 1024 * 1024  # 2MB max upload
+
+    # Email
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True').lower() == 'true'
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME')
+
+    # Paginação
+    USERS_PER_PAGE = 10
+    LOGS_PER_PAGE = 20
+
+    @staticmethod
+    def init_app(app):
+        pass
+
+
+class DevelopmentConfig(Config):
+    """Configuração de desenvolvimento"""
+    DEBUG = True
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'instance', 'flaskauth_dev.db')
+
+
+class ProductionConfig(Config):
+    """Configuração de produção"""
+    DEBUG = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+        'sqlite:///' + os.path.join(basedir, 'instance', 'flaskauth.db')
+
+    @classmethod
+    def init_app(cls, app):
+        Config.init_app(app)
+
+
+class TestingConfig(Config):
+    """Configuração de testes"""
+    TESTING = True
+    WTF_CSRF_ENABLED = False
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+
+
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig,
+    'default': DevelopmentConfig
+}

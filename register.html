@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Editar Usuário{% endblock %}
+{% block page_title %}Editar Usuário{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="card fade-in-up">
+      <div class="card-header d-flex align-items-center gap-2">
+        <div class="user-mini-avatar">{{ target_user.full_name[0].upper() if target_user.full_name else 'U' }}</div>
+        <div>
+          <span style="font-size:15px;">{{ target_user.full_name or target_user.username }}</span>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">@{{ target_user.username }}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <form method="POST" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="row g-3">
+            <div class="col-md-6">
+              {{ form.full_name.label(class="form-label") }}
+              {{ form.full_name(class="form-control" + (" is-invalid" if form.full_name.errors else "")) }}
+              {% for e in form.full_name.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+              {{ form.username.label(class="form-label") }}
+              {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+              {% for e in form.username.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+              {{ form.email.label(class="form-label") }}
+              {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+              {% for e in form.email.errors %}<div class="invalid-feedback">{{ e }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+              {{ form.role.label(class="form-label") }}
+              {{ form.role(class="form-select") }}
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                {{ form.is_active(class="form-check-input") }}
+                <label class="form-check-label" for="is_active" style="font-size:14px;color:var(--text-secondary);">
+                  Conta ativa
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="divider-h"></div>
+          <div class="d-flex gap-2">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('admin.users_list') }}" class="btn btn-outline-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

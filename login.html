@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Logs do Sistema{% endblock %}
+{% block page_title %}Logs do Sistema{% endblock %}
+
+{% block content %}
+<div class="page-header fade-in-up">
+  <div class="page-header-info">
+    <h2>Logs de Atividade</h2>
+    <p>{{ pagination.total }} registro(s) encontrado(s)</p>
+  </div>
+  <div class="d-flex gap-2">
+    {% for s, label in [('','Todos'),('success','Sucesso'),('warning','Aviso'),('error','Erro')] %}
+    <a href="{{ url_for('admin.activity_logs', status=s) }}"
+       class="btn btn-sm {% if filter_status == s %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+      {{ label }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="card fade-in-up delay-1">
+  <div class="card-body p-0">
+    {% if logs %}
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Ação</th>
+            <th>Usuário</th>
+            <th>IP</th>
+            <th>Data/Hora</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td>
+              <span class="log-badge log-{{ log.status }}">
+                <i class="bi bi-circle-fill" style="font-size:7px;"></i>
+                {{ log.status }}
+              </span>
+            </td>
+            <td>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);">
+                {{ log.action|replace('_',' ')|title }}
+              </div>
+              {% if log.description %}
+              <div style="font-size:11px;color:var(--text-muted);">{{ log.description[:80] }}</div>
+              {% endif %}
+            </td>
+            <td style="font-size:12px;color:var(--text-secondary);">
+              {% if log.user %}
+                <i class="bi bi-person me-1"></i>{{ log.user.username }}
+              {% else %}
+                <span style="color:var(--text-muted);">—</span>
+              {% endif %}
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);">
+              {{ log.ip_address or '—' }}
+            </td>
+            <td style="font-size:12px;color:var(--text-muted);">
+              {{ log.created_at.strftime('%d/%m/%Y %H:%M:%S') }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div class="d-flex justify-content-center py-3">
+      <nav>
+        <ul class="pagination mb-0">
+          <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('admin.activity_logs', page=pagination.prev_num, status=filter_status) }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if page_num %}
+              <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('admin.activity_logs', page=page_num, status=filter_status) }}">{{ page_num }}</a>
+              </li>
+            {% else %}
+              <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+          {% endfor %}
+          <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('admin.activity_logs', page=pagination.next_num, status=filter_status) }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5" style="color:var(--text-muted);">
+      <i class="bi bi-journal-x fs-1 d-block mb-3"></i>
+      <p>Nenhum log encontrado.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
